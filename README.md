@@ -1,2 +1,2 @@
 # MLPQTE
-\\ The Greatest Encryption Ever **INVENTED** \\
+\ The Greatest Encryption Ever **INVENTED** \
