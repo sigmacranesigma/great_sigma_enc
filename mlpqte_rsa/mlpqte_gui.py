@@ -81,10 +81,10 @@ def gen_keys():
 
         os.makedirs("shares", exist_ok=True)
         master_key = os.urandom(32)
-        shares = shamir_split(master_key, n, t)
+        shares = shamir_split(int.from_bytes(master_key, byteorder='big'), n, t)  # Convert master key to integer
         for idx, (x, y) in enumerate(shares, start=1):
             with open(f"shares/share_{idx}.b64", "w") as f:
-                f.write(f"{x}:{base64.b64encode(bytes([y])).decode()}")
+                f.write(f"{x}:{base64.b64encode(bytes([y])).decode()}")  # Convert y to bytes
         status.set("✅ Keypair + shares generated")
     except Exception as e:
         messagebox.showerror("Error", str(e))
