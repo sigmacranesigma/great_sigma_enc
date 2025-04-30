@@ -32,3 +32,10 @@ print(key.hex())
 python mlpqte_enc.py enc public.pem secret.txt encrypted.bin
 python mlpqte_dec.py dec private.pem encrypted.bin decrypted.txt
 ```
+
+## Other Ways to use MLPQTE
+
+Use the GUI within mlpqte_gui.py with:
+```
+python mlpqte_gui.py
+```
