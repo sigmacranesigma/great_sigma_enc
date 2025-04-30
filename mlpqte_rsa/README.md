@@ -35,7 +35,7 @@ python mlpqte_dec.py dec private.pem encrypted.bin decrypted.txt
 
 ## Other Ways to use MLPQTE
 
-Use the GUI within mlpqte_gui.py with:
+Use the GUI within mlpqte_gui.py:
 ```
 python mlpqte_gui.py
 ```
