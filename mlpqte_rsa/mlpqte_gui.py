@@ -1,12 +1,61 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
+import base64
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.secret_sharing import Shamir
 from Crypto.Cipher import ChaCha20_Poly1305
-import base64
+import random
 
+
+# Helper function to generate a polynomial for Shamir Secret Sharing
+def generate_polynomial(secret, degree):
+    coefficients = [secret]
+    for _ in range(degree - 1):
+        coefficients.append(random.randint(1, 1000))
+    return coefficients
+
+
+# Helper function for Shamir's Secret Sharing
+def evaluate_polynomial(coefficients, x):
+    return sum(c * (x ** i) for i, c in enumerate(coefficients)) % 257
+
+
+# Split the secret into shares (Shamir Secret Sharing)
+def shamir_split(secret, n, t):
+    if t > n:
+        raise ValueError("Threshold can't be greater than total shares")
+
+    polynomial = generate_polynomial(secret, t)
+    shares = []
+    for i in range(1, n + 1):
+        share = (i, evaluate_polynomial(polynomial, i))
+        shares.append(share)
+    return shares
+
+
+# Combine shares to recover the secret
+def shamir_combine(shares, t):
+    if len(shares) < t:
+        raise ValueError(f"Need at least {t} shares to recover the secret.")
+
+    def lagrange_interpolation(shares, x):
+        result = 0
+        for i, (xi, yi) in enumerate(shares):
+            numerator = 1
+            denominator = 1
+            for j, (xj, _) in enumerate(shares):
+                if i != j:
+                    numerator *= (x - xj)
+                    denominator *= (xi - xj)
+            result += yi * numerator // denominator
+        return result % 257
+
+    secret = lagrange_interpolation(shares, 0)
+    return secret
+
+
+# Function to generate RSA keys and secret shares
 def gen_keys():
     try:
         n = int(entry_n.get())
@@ -32,14 +81,16 @@ def gen_keys():
 
         os.makedirs("shares", exist_ok=True)
         master_key = os.urandom(32)
-        shares = Shamir.split(t, n, master_key)
+        shares = shamir_split(master_key, n, t)
         for idx, (x, y) in enumerate(shares, start=1):
             with open(f"shares/share_{idx}.b64", "w") as f:
-                f.write(f"{x}:{base64.b64encode(y).decode()}")
+                f.write(f"{x}:{base64.b64encode(bytes([y])).decode()}")
         status.set("✅ Keypair + shares generated")
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+
+# Encrypt a file
 def encrypt_file():
     try:
         pub_file = filedialog.askopenfilename(title="Select Public Key", filetypes=[("PEM files", "*.pem")])
@@ -67,6 +118,8 @@ def encrypt_file():
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+
+# Decrypt a file
 def decrypt_file():
     try:
         pri_file = filedialog.askopenfilename(title="Select Private Key", filetypes=[("PEM files", "*.pem")])
@@ -92,6 +145,7 @@ def decrypt_file():
         status.set(f"✅ Decrypted: {os.path.basename(out_file)}")
     except Exception as e:
         messagebox.showerror("Error", str(e))
+
 
 root = tk.Tk()
 root.title("MLPQTE - RSA Encryption GUI")
